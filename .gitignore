@@ -6,3 +6,6 @@ scrape.mjs
 download-images.mjs
 visual-dedup.mjs
 qa.mjs
+
+# Local Netlify folder
+.netlify
