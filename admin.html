@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>757 Tiki Boat Tours - Admin Panel</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a1628;--card:#0f1d32;--card2:#162844;--accent:#e32252;--gold:#c8a96e;
+  --text:#f0f0f0;--muted:#8899aa;--green:#22c55e;--blue:#3b82f6;--orange:#f59e0b;
+  --purple:#a855f7;--radius:10px;--shadow:0 4px 24px rgba(0,0,0,.4);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+a{color:var(--gold);text-decoration:none}
+button{cursor:pointer;font-family:inherit;border:none;outline:none}
+input,select,textarea{font-family:inherit;outline:none}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--card2);border-radius:3px}
+
+/* ─── LOGIN ─── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-card{background:var(--card);border:1px solid rgba(200,169,110,.15);border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:var(--shadow);text-align:center}
+.login-card .logo{font-size:28px;font-weight:700;color:var(--gold);margin-bottom:6px;letter-spacing:.5px}
+.login-card .sub{color:var(--muted);font-size:14px;margin-bottom:32px}
+.login-card input{width:100%;padding:14px 18px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.1);background:var(--card2);color:var(--text);font-size:15px;margin-bottom:16px;transition:border .2s}
+.login-card input:focus{border-color:var(--gold)}
+.login-card .btn{width:100%;padding:14px;border-radius:var(--radius);background:linear-gradient(135deg,var(--accent),#c4194a);color:#fff;font-size:15px;font-weight:600;letter-spacing:.5px;transition:transform .15s,box-shadow .15s}
+.login-card .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(227,34,82,.35)}
+.login-card .err{color:var(--accent);font-size:13px;margin-top:12px;min-height:20px}
+
+/* ─── DASHBOARD ─── */
+.dashboard{display:none}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:var(--card);border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap;gap:10px}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.topbar-title{font-size:20px;font-weight:700;color:var(--gold)}
+.topbar .badge{background:var(--accent);color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600}
+.topbar-actions{display:flex;gap:10px}
+.topbar-actions button{padding:8px 18px;border-radius:var(--radius);font-size:13px;font-weight:600;transition:all .15s}
+.btn-outline{background:transparent;border:1px solid rgba(255,255,255,.15);color:var(--text)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.btn-danger{background:rgba(227,34,82,.15);color:var(--accent);border:1px solid rgba(227,34,82,.2)}
+.btn-danger:hover{background:rgba(227,34,82,.25)}
+
+/* ─── TABS ─── */
+.tabs{display:flex;gap:0;background:var(--card);border-bottom:1px solid rgba(255,255,255,.06);padding:0 28px;overflow-x:auto}
+.tab-btn{padding:14px 22px;font-size:14px;font-weight:600;color:var(--muted);background:transparent;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-content{display:none;padding:28px;animation:fadeUp .3s ease}
+.tab-content.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── STATS ROW ─── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:22px;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--gold);border-radius:4px 0 0 4px}
+.stat-card.pulse::after{background:var(--green);animation:pulseGlow 2s infinite}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 4px var(--green)}50%{box-shadow:0 0 16px var(--green)}}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:700}
+
+/* ─── FILTER BAR ─── */
+.filter-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.filter-bar select,.filter-bar input{padding:10px 16px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.1);background:var(--card2);color:var(--text);font-size:14px}
+.filter-bar select{min-width:160px}
+.filter-bar input{flex:1;min-width:200px}
+
+/* ─── TABLE ─── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid rgba(255,255,255,.06)}
+table{width:100%;border-collapse:collapse;min-width:700px}
+thead{background:var(--card2)}
+th{padding:14px 16px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600}
+td{padding:14px 16px;border-top:1px solid rgba(255,255,255,.04);font-size:14px;vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+.status-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;text-transform:capitalize}
+.status-new{background:rgba(59,130,246,.15);color:var(--blue)}
+.status-contacted{background:rgba(245,158,11,.15);color:var(--orange)}
+.status-booked{background:rgba(34,197,94,.15);color:var(--green)}
+.status-closed{background:rgba(168,85,247,.15);color:var(--purple)}
+.status-archived{background:rgba(136,153,170,.15);color:var(--muted)}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.row-actions button{padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;transition:all .15s}
+.btn-sm-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.btn-sm-blue:hover{background:rgba(59,130,246,.3)}
+.btn-sm-green{background:rgba(34,197,94,.15);color:var(--green)}
+.btn-sm-green:hover{background:rgba(34,197,94,.3)}
+.btn-sm-gold{background:rgba(200,169,110,.15);color:var(--gold)}
+.btn-sm-gold:hover{background:rgba(200,169,110,.3)}
+.btn-sm-red{background:rgba(227,34,82,.12);color:var(--accent)}
+.btn-sm-red:hover{background:rgba(227,34,82,.25)}
+.expand-row{display:none}
+.expand-row.open{display:table-row}
+.expand-cell{padding:16px 24px;background:var(--card2);border-left:3px solid var(--gold)}
+.expand-cell p{margin-bottom:6px;font-size:13px;color:var(--muted)}
+.expand-cell p span{color:var(--text)}
+
+/* ─── MOBILE CARD VIEW ─── */
+.mobile-cards{display:none}
+.lead-card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.lead-card-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:12px}
+.lead-card-name{font-weight:700;font-size:16px}
+.lead-card-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+.lead-card-row span:last-child{color:var(--text)}
+.lead-card-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+
+@media(max-width:768px){
+  .table-wrap{display:none}
+  .mobile-cards{display:block}
+  .topbar{padding:12px 16px}
+  .tabs{padding:0 12px}
+  .tab-content{padding:16px}
+  .tab-btn{padding:12px 14px;font-size:13px}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .stat-value{font-size:22px}
+}
+
+/* ─── CALENDAR ─── */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.cal-header h2{font-size:22px;font-weight:700}
+.cal-nav{display:flex;gap:10px}
+.cal-nav button{width:38px;height:38px;border-radius:50%;background:var(--card2);color:var(--text);font-size:18px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.1);transition:all .15s}
+.cal-nav button:hover{border-color:var(--gold);color:var(--gold)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day-header{padding:10px;text-align:center;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase}
+.cal-day{background:var(--card);border:1px solid rgba(255,255,255,.04);min-height:100px;padding:8px;border-radius:6px;cursor:pointer;transition:border-color .15s}
+.cal-day:hover{border-color:var(--gold)}
+.cal-day.today{border-color:var(--accent)}
+.cal-day.other-month{opacity:.3}
+.cal-day .day-num{font-size:13px;font-weight:600;margin-bottom:4px}
+.cal-day .cal-event{font-size:10px;padding:2px 6px;border-radius:4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-day .cal-event.evt-new{background:rgba(59,130,246,.2);color:var(--blue)}
+.cal-day .cal-event.evt-booked{background:rgba(34,197,94,.2);color:var(--green)}
+.cal-day .cal-event.evt-contacted{background:rgba(245,158,11,.2);color:var(--orange)}
+.cal-day .cal-event.evt-blocked{background:rgba(227,34,82,.2);color:var(--accent)}
+@media(max-width:768px){.cal-day{min-height:60px;padding:4px}.cal-day .cal-event{font-size:9px}}
+
+/* ─── TRAFFIC TAB ─── */
+.chart-wrap{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:24px;margin-bottom:24px}
+.chart-title{font-size:16px;font-weight:700;margin-bottom:16px}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:200px;padding-top:10px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bar{width:100%;max-width:24px;background:linear-gradient(to top,var(--accent),var(--gold));border-radius:4px 4px 0 0;min-height:2px;transition:height .4s ease}
+.bar-label{font-size:9px;color:var(--muted);margin-top:6px;transform:rotate(-45deg);white-space:nowrap}
+.traffic-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+.traffic-card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:20px}
+.traffic-card h4{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+.traffic-card .val{font-size:24px;font-weight:700;margin-bottom:4px}
+.traffic-card ul{list-style:none}
+.traffic-card li{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
+.traffic-card li:last-child{border:none}
+
+/* ─── SETTINGS TAB ─── */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:24px}
+.settings-section{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:24px}
+.settings-section h3{font-size:16px;font-weight:700;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06);color:var(--gold)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:var(--card2);color:var(--text);font-size:14px}
+.field input:focus,.field textarea:focus{border-color:var(--gold)}
+.field textarea{resize:vertical;min-height:60px}
+.field .hint{font-size:11px;color:var(--muted);margin-top:4px}
+.btn-save{padding:10px 28px;border-radius:var(--radius);background:linear-gradient(135deg,var(--accent),#c4194a);color:#fff;font-size:14px;font-weight:600;transition:all .15s;margin-top:8px}
+.btn-save:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(227,34,82,.3)}
+
+/* ─── MODAL ─── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;padding:32px;position:relative;animation:fadeUp .25s ease}
+.modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--card2);color:var(--muted);font-size:18px;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{color:var(--text)}
+.modal h2{font-size:20px;font-weight:700;margin-bottom:20px;color:var(--gold)}
+.modal .detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px}
+.modal .detail-row .lbl{color:var(--muted)}
+.modal .notes-area{margin-top:16px}
+.modal .notes-area textarea{width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:var(--card2);color:var(--text);font-size:14px;min-height:80px;resize:vertical}
+.modal .modal-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+
+/* ─── TOAST ─── */
+.toast-container{position:fixed;top:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:10px}
+.toast{padding:14px 22px;border-radius:var(--radius);font-size:14px;font-weight:500;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:slideIn .3s ease;max-width:360px}
+.toast.success{background:linear-gradient(135deg,#16a34a,#15803d)}
+.toast.error{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+.toast.info{background:linear-gradient(135deg,var(--blue),#2563eb)}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+
+/* ─── SPINNER ─── */
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{display:flex;align-items:center;justify-content:center;padding:60px;flex-direction:column;gap:16px;color:var(--muted)}
+.loading-overlay .spinner{width:36px;height:36px;border-width:3px}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:.4}
+</style>
+</head>
+<body>
+
+<!-- ─── LOGIN ─── -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <div class="logo">757 Tiki Boat Tours</div>
+    <div class="sub">Admin Panel</div>
+    <input type="password" id="loginPass" placeholder="Enter admin password" autofocus>
+    <button class="btn" onclick="attemptLogin()">Sign In</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ─── DASHBOARD ─── -->
+<div class="dashboard" id="dashboard">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">757 Tiki Boat Tours</span>
+      <span class="badge">Admin Panel</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-outline" onclick="exportCSV()">&#128229; Export CSV</button>
+      <button class="btn-danger" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="leads">Bookings / Leads</button>
+    <button class="tab-btn" data-tab="calendar">Calendar</button>
+    <button class="tab-btn" data-tab="traffic">Traffic</button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </div>
+
+  <!-- ═══ LEADS TAB ═══ -->
+  <div class="tab-content active" id="tab-leads">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total Leads</div><div class="stat-value" id="statTotal">0</div></div>
+      <div class="stat-card pulse"><div class="stat-label">New Leads</div><div class="stat-value" id="statNew">0</div></div>
+      <div class="stat-card"><div class="stat-label">Booked This Month</div><div class="stat-value" id="statBooked">0</div></div>
+      <div class="stat-card"><div class="stat-label">Conversion Rate</div><div class="stat-value" id="statConversion">0%</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <select id="filterStatus" onchange="renderLeads()">
+        <option value="">All Statuses</option>
+        <option value="new">New</option>
+        <option value="contacted">Contacted</option>
+        <option value="booked">Booked</option>
+        <option value="closed">Closed</option>
+        <option value="archived">Archived</option>
+      </select>
+      <input type="text" id="filterSearch" placeholder="Search leads..." oninput="renderLeads()">
+    </div>
+
+    <!-- Desktop Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Cruise Details</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leadsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Cards -->
+    <div class="mobile-cards" id="mobileCards"></div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="leadsEmpty" style="display:none">
+      <div class="icon">&#128203;</div>
+      <p>No leads found</p>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="leadsLoading" style="display:none">
+      <div class="spinner"></div>
+      <span>Loading leads...</span>
+    </div>
+  </div>
+
+  <!-- ═══ CALENDAR TAB ═══ -->
+  <div class="tab-content" id="tab-calendar">
+    <div class="cal-header">
+      <h2 id="calTitle"></h2>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&#8249;</button>
+        <button onclick="changeMonth(1)">&#8250;</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <!-- ═══ TRAFFIC TAB ═══ -->
+  <div class="tab-content" id="tab-traffic">
+    <div class="chart-wrap">
+      <div class="chart-title">Sessions (Last 30 Days)</div>
+      <div class="bar-chart" id="sessionsChart"></div>
+    </div>
+    <div class="traffic-stats">
+      <div class="traffic-card">
+        <h4>Total Sessions</h4>
+        <div class="val" id="trafficSessions">--</div>
+      </div>
+      <div class="traffic-card">
+        <h4>Avg Duration</h4>
+        <div class="val" id="trafficDuration">--</div>
+      </div>
+      <div class="traffic-card">
+        <h4>Top Pages</h4>
+        <ul id="trafficPages"><li>Loading...</li></ul>
+      </div>
+      <div class="traffic-card">
+        <h4>Top Sources</h4>
+        <ul id="trafficSources"><li>Loading...</li></ul>
+      </div>
+      <div class="traffic-card">
+        <h4>Devices</h4>
+        <ul id="trafficDevices"><li>Loading...</li></ul>
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:12px;margin-top:20px">Traffic data requires Netlify Analytics. Configure SITE_ID and NETLIFY_TOKEN in Settings.</p>
+  </div>
+
+  <!-- ═══ SETTINGS TAB ═══ -->
+  <div class="tab-content" id="tab-settings">
+    <div class="settings-grid">
+      <div class="settings-section">
+        <h3>Business Info</h3>
+        <div class="field"><label>Business Name</label><input type="text" value="757 Tiki Boat Tours" readonly></div>
+        <div class="field"><label>Phone</label><input type="text" value="(757) 713-2275" readonly></div>
+      </div>
+      <div class="settings-section">
+        <h3>Netlify Analytics</h3>
+        <div class="field"><label>Site ID</label><input type="text" id="setSiteId" placeholder="Netlify Site ID"><div class="hint">Required for traffic analytics</div></div>
+        <div class="field"><label>Netlify Token</label><input type="password" id="setNetlifyToken" placeholder="Personal Access Token"></div>
+        <button class="btn-save" onclick="saveSettings()">Save</button>
+      </div>
+      <div class="settings-section">
+        <h3>Email Notifications (Mailgun)</h3>
+        <div class="field"><label>Mailgun API Key</label><input type="password" id="setMailgunKey" placeholder="key-..."></div>
+        <div class="field"><label>Mailgun Domain</label><input type="text" id="setMailgunDomain" placeholder="mg.yourdomain.com"></div>
+        <div class="field"><label>Notification Email</label><input type="email" id="setNotifyEmail" placeholder="admin@example.com"></div>
+        <button class="btn-save" onclick="saveSettings()">Save</button>
+      </div>
+      <div class="settings-section">
+        <h3>Stripe Payments</h3>
+        <div class="field"><label>Stripe Secret Key</label><input type="password" id="setStripeKey" placeholder="sk_live_..."></div>
+        <div class="field"><label>Deposit Amount ($)</label><input type="number" id="setDepositAmt" placeholder="100" min="0" step="1"></div>
+        <button class="btn-save" onclick="saveSettings()">Save</button>
+      </div>
+      <div class="settings-section">
+        <h3>PayPal Payments</h3>
+        <div class="field"><label>PayPal Client ID</label><input type="text" id="setPaypalId" placeholder="Client ID"></div>
+        <div class="field"><label>PayPal Secret</label><input type="password" id="setPaypalSecret" placeholder="Secret"></div>
+        <button class="btn-save" onclick="saveSettings()">Save</button>
+      </div>
+      <div class="settings-section">
+        <h3>Deposit Emails (Resend)</h3>
+        <div class="field"><label>Resend API Key</label><input type="password" id="setResendKey" placeholder="re_..."></div>
+        <div class="field"><label>From Email</label><input type="email" id="setResendFrom" placeholder="bookings@757tikiboattours.com"></div>
+        <button class="btn-save" onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── LEAD DETAIL MODAL ─── -->
+<div class="modal-overlay" id="leadModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h2 id="modalTitle">Lead Details</h2>
+    <div id="modalBody"></div>
+    <div class="notes-area">
+      <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px">Notes</label>
+      <textarea id="modalNotes" placeholder="Add notes..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" id="modalSaveNotes" onclick="saveModalNotes()">Save Notes</button>
+      <select id="modalStatusSelect" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:var(--card2);color:var(--text);font-size:14px">
+        <option value="new">New</option>
+        <option value="contacted">Contacted</option>
+        <option value="booked">Booked</option>
+        <option value="closed">Closed</option>
+        <option value="archived">Archived</option>
+      </select>
+      <button class="btn-save" onclick="updateModalStatus()">Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DAY MODAL ─── -->
+<div class="modal-overlay" id="dayModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDayModal()">&times;</button>
+    <h2 id="dayModalTitle">Bookings</h2>
+    <div id="dayModalBody"></div>
+    <div style="margin-top:16px">
+      <button class="btn-save" id="blockDayBtn" onclick="toggleBlockDay()">Block This Day</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST CONTAINER ─── -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONFIG & STATE
+   ═══════════════════════════════════════════ */
+const PASS_HASH = '3b9814d42567973827c2eb50a9b9582c61e720cce8b1f3a9b6597d7fd44cb571';
+let AUTH_TOKEN = '';
+let leads = [];
+let blockedDates = JSON.parse(localStorage.getItem('tiki_blocked_dates') || '[]');
+let calYear, calMonth;
+let currentModalLead = null;
+
+/* ═══════════════════════════════════════════
+   AUTH
+   ═══════════════════════════════════════════ */
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function attemptLogin() {
+  const pass = document.getElementById('loginPass').value;
+  const hash = await sha256(pass);
+  if (hash === PASS_HASH) {
+    AUTH_TOKEN = pass;
+    sessionStorage.setItem('tiki_auth', pass);
+    showDashboard();
+  } else {
+    document.getElementById('loginErr').textContent = 'Invalid password';
+    document.getElementById('loginPass').value = '';
+  }
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+
+function logout() {
+  sessionStorage.removeItem('tiki_auth');
+  AUTH_TOKEN = '';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginErr').textContent = '';
+}
+
+async function checkSession() {
+  const saved = sessionStorage.getItem('tiki_auth');
+  if (saved) {
+    const hash = await sha256(saved);
+    if (hash === PASS_HASH) { AUTH_TOKEN = saved; showDashboard(); }
+  }
+}
+
+function showDashboard() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadSettings();
+  fetchLeads();
+  initCalendar();
+}
+
+/* ═══════════════════════════════════════════
+   TABS
+   ═══════════════════════════════════════════ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'calendar') renderCalendar();
+    if (btn.dataset.tab === 'traffic') loadTraffic();
+  });
+});
+
+/* ═══════════════════════════════════════════
+   LEADS API
+   ═══════════════════════════════════════════ */
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Authorization': 'Bearer ' + AUTH_TOKEN, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch('/.netlify/functions/' + endpoint, opts);
+  if (!res.ok) throw new Error('API error: ' + res.status);
+  return res.json();
+}
+
+async function fetchLeads() {
+  const loading = document.getElementById('leadsLoading');
+  loading.style.display = 'flex';
+  try {
+    const data = await apiCall('get-leads');
+    leads = Array.isArray(data) ? data : (data.leads || []);
+    toast('Loaded ' + leads.length + ' leads', 'success');
+  } catch (e) {
+    console.error(e);
+    leads = [];
+    toast('Could not load leads: ' + e.message, 'error');
+  }
+  loading.style.display = 'none';
+  updateStats();
+  renderLeads();
+}
+
+function updateStats() {
+  const now = new Date();
+  const thisMonth = leads.filter(l => {
+    const d = new Date(l.created_at || l.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && (l.status === 'booked');
+  });
+  const newLeads = leads.filter(l => l.status === 'new');
+  const booked = leads.filter(l => l.status === 'booked');
+  document.getElementById('statTotal').textContent = leads.length;
+  document.getElementById('statNew').textContent = newLeads.length;
+  document.getElementById('statBooked').textContent = thisMonth.length;
+  document.getElementById('statConversion').textContent = leads.length ? Math.round((booked.length / leads.length) * 100) + '%' : '0%';
+}
+
+function getFilteredLeads() {
+  const status = document.getElementById('filterStatus').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+  return leads.filter(l => {
+    if (status && l.status !== status) return false;
+    if (search) {
+      const hay = [l.name, l.email, l.phone, l.cruise_type, l.message, l.preferred_date].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+function renderLeads() {
+  const filtered = getFilteredLeads();
+  const tbody = document.getElementById('leadsTableBody');
+  const mobileWrap = document.getElementById('mobileCards');
+  const empty = document.getElementById('leadsEmpty');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    mobileWrap.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Desktop table
+  let html = '';
+  filtered.forEach((l, i) => {
+    const sc = 'status-' + (l.status || 'new');
+    const date = l.created_at ? new Date(l.created_at).toLocaleDateString() : (l.date || '--');
+    html += `<tr>
+      <td><button class="btn-sm-gold" onclick="toggleExpand(${i})" title="Expand">&#9660;</button></td>
+      <td><strong>${esc(l.name || '--')}</strong></td>
+      <td>${esc(l.email || '--')}<br><small style="color:var(--muted)">${esc(l.phone || '')}</small></td>
+      <td>${esc(l.cruise_type || '--')}<br><small style="color:var(--muted)">${esc(l.preferred_date || '')} &bull; ${esc(l.group_size ? l.group_size + ' guests' : '')}</small></td>
+      <td><span class="status-badge ${sc}">${esc(l.status || 'new')}</span></td>
+      <td>${date}</td>
+      <td class="row-actions">
+        <button class="btn-sm-blue" onclick="openModal(${i})">View</button>
+        <button class="btn-sm-green" onclick="changeStatus(${i},'booked')">Book</button>
+        <button class="btn-sm-red" onclick="archiveLead(${i})">Archive</button>
+      </td>
+    </tr>
+    <tr class="expand-row" id="expand-${i}">
+      <td colspan="7" class="expand-cell">
+        <p>Email: <span>${esc(l.email || '--')}</span></p>
+        <p>Phone: <span>${esc(l.phone || '--')}</span></p>
+        <p>Cruise: <span>${esc(l.cruise_type || '--')}</span></p>
+        <p>Date: <span>${esc(l.preferred_date || '--')}</span></p>
+        <p>Time: <span>${esc(l.preferred_time || '--')}</span></p>
+        <p>Group Size: <span>${esc(l.group_size ? String(l.group_size) : '--')}</span></p>
+        <p>Message: <span>${esc(l.message || '--')}</span></p>
+        <p>Notes: <span>${esc(l.notes || 'None')}</span></p>
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+
+  // Mobile cards
+  let cards = '';
+  filtered.forEach((l, i) => {
+    const sc = 'status-' + (l.status || 'new');
+    cards += `<div class="lead-card">
+      <div class="lead-card-header"><span class="lead-card-name">${esc(l.name || '--')}</span><span class="status-badge ${sc}">${esc(l.status || 'new')}</span></div>
+      <div class="lead-card-row"><span>Email</span><span>${esc(l.email || '--')}</span></div>
+      <div class="lead-card-row"><span>Phone</span><span>${esc(l.phone || '--')}</span></div>
+      <div class="lead-card-row"><span>Cruise</span><span>${esc(l.cruise_type || '--')}</span></div>
+      <div class="lead-card-row"><span>Date</span><span>${esc(l.preferred_date || '--')}</span></div>
+      <div class="lead-card-row"><span>Group</span><span>${esc(l.group_size ? l.group_size + ' guests' : '--')}</span></div>
+      <div class="lead-card-actions">
+        <button class="btn-sm-blue" onclick="openModal(${i})">View</button>
+        <button class="btn-sm-green" onclick="changeStatus(${i},'booked')">Book</button>
+        <button class="btn-sm-red" onclick="archiveLead(${i})">Archive</button>
+      </div>
+    </div>`;
+  });
+  mobileWrap.innerHTML = cards;
+}
+
+function toggleExpand(i) {
+  document.getElementById('expand-' + i).classList.toggle('open');
+}
+
+async function changeStatus(i, status) {
+  const filtered = getFilteredLeads();
+  const lead = filtered[i];
+  if (!lead) return;
+  try {
+    await apiCall('update-lead', 'POST', { id: lead.id, status });
+    lead.status = status;
+    const orig = leads.find(l => l.id === lead.id);
+    if (orig) orig.status = status;
+    updateStats();
+    renderLeads();
+    toast('Status updated to ' + status, 'success');
+  } catch (e) {
+    toast('Failed to update: ' + e.message, 'error');
+  }
+}
+
+async function archiveLead(i) {
+  const filtered = getFilteredLeads();
+  const lead = filtered[i];
+  if (!lead || !confirm('Archive this lead?')) return;
+  try {
+    await apiCall('delete-lead', 'POST', { id: lead.id });
+    lead.status = 'archived';
+    const orig = leads.find(l => l.id === lead.id);
+    if (orig) orig.status = 'archived';
+    updateStats();
+    renderLeads();
+    toast('Lead archived', 'info');
+  } catch (e) {
+    toast('Failed to archive: ' + e.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LEAD MODAL
+   ═══════════════════════════════════════════ */
+function openModal(i) {
+  const filtered = getFilteredLeads();
+  const l = filtered[i];
+  if (!l) return;
+  currentModalLead = l;
+  document.getElementById('modalTitle').textContent = l.name || 'Lead Details';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="detail-row"><span class="lbl">Email</span><span>${esc(l.email || '--')}</span></div>
+    <div class="detail-row"><span class="lbl">Phone</span><span>${esc(l.phone || '--')}</span></div>
+    <div class="detail-row"><span class="lbl">Cruise Type</span><span>${esc(l.cruise_type || '--')}</span></div>
+    <div class="detail-row"><span class="lbl">Preferred Date</span><span>${esc(l.preferred_date || '--')}</span></div>
+    <div class="detail-row"><span class="lbl">Preferred Time</span><span>${esc(l.preferred_time || '--')}</span></div>
+    <div class="detail-row"><span class="lbl">Group Size</span><span>${esc(l.group_size ? String(l.group_size) : '--')}</span></div>
+    <div class="detail-row"><span class="lbl">Message</span><span>${esc(l.message || '--')}</span></div>
+    <div class="detail-row"><span class="lbl">Status</span><span class="status-badge status-${l.status || 'new'}">${esc(l.status || 'new')}</span></div>
+    <div class="detail-row"><span class="lbl">Created</span><span>${l.created_at ? new Date(l.created_at).toLocaleString() : '--'}</span></div>
+  `;
+  document.getElementById('modalNotes').value = l.notes || '';
+  document.getElementById('modalStatusSelect').value = l.status || 'new';
+  document.getElementById('leadModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('leadModal').classList.remove('open');
+  currentModalLead = null;
+}
+
+async function saveModalNotes() {
+  if (!currentModalLead) return;
+  const notes = document.getElementById('modalNotes').value;
+  try {
+    await apiCall('update-lead', 'POST', { id: currentModalLead.id, notes });
+    currentModalLead.notes = notes;
+    const orig = leads.find(l => l.id === currentModalLead.id);
+    if (orig) orig.notes = notes;
+    toast('Notes saved', 'success');
+  } catch (e) {
+    toast('Failed to save notes: ' + e.message, 'error');
+  }
+}
+
+async function updateModalStatus() {
+  if (!currentModalLead) return;
+  const status = document.getElementById('modalStatusSelect').value;
+  try {
+    await apiCall('update-lead', 'POST', { id: currentModalLead.id, status });
+    currentModalLead.status = status;
+    const orig = leads.find(l => l.id === currentModalLead.id);
+    if (orig) orig.status = status;
+    updateStats();
+    renderLeads();
+    toast('Status updated to ' + status, 'success');
+    closeModal();
+  } catch (e) {
+    toast('Failed to update: ' + e.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   CALENDAR
+   ═══════════════════════════════════════════ */
+function initCalendar() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendar();
+}
+
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calTitle').textContent = months[calMonth] + ' ' + calYear;
+
+  const grid = document.getElementById('calGrid');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = days.map(d => `<div class="cal-day-header">${d}</div>`).join('');
+
+  const first = new Date(calYear, calMonth, 1);
+  const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
+  const startDow = first.getDay();
+  const today = new Date();
+
+  // Previous month padding
+  const prevLast = new Date(calYear, calMonth, 0).getDate();
+  for (let i = startDow - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month"><div class="day-num">${prevLast - i}</div></div>`;
+  }
+
+  // Current month
+  for (let d = 1; d <= lastDay; d++) {
+    const dateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const isToday = (d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear());
+    const isBlocked = blockedDates.includes(dateStr);
+
+    // Find leads on this day
+    const dayLeads = leads.filter(l => {
+      const pd = l.preferred_date || '';
+      return pd === dateStr || pd.startsWith(dateStr);
+    });
+
+    let events = '';
+    dayLeads.slice(0, 3).forEach(l => {
+      const cls = 'evt-' + (l.status || 'new');
+      events += `<div class="cal-event ${cls}">${esc(l.name || 'Lead')}</div>`;
+    });
+    if (dayLeads.length > 3) events += `<div class="cal-event evt-new">+${dayLeads.length - 3} more</div>`;
+    if (isBlocked) events += `<div class="cal-event evt-blocked">BLOCKED</div>`;
+
+    html += `<div class="cal-day${isToday ? ' today' : ''}" onclick="openDayModal('${dateStr}')"><div class="day-num">${d}</div>${events}</div>`;
+  }
+
+  // Next month padding
+  const totalCells = startDow + lastDay;
+  const remaining = (7 - (totalCells % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-day other-month"><div class="day-num">${i}</div></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function openDayModal(dateStr) {
+  const dayLeads = leads.filter(l => {
+    const pd = l.preferred_date || '';
+    return pd === dateStr || pd.startsWith(dateStr);
+  });
+  const isBlocked = blockedDates.includes(dateStr);
+
+  document.getElementById('dayModalTitle').textContent = 'Bookings for ' + dateStr;
+  let body = '';
+  if (!dayLeads.length) {
+    body = '<p style="color:var(--muted);padding:12px 0">No bookings for this day.</p>';
+  } else {
+    dayLeads.forEach(l => {
+      body += `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <strong>${esc(l.name || '--')}</strong> <span class="status-badge status-${l.status || 'new'}">${esc(l.status || 'new')}</span>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px">${esc(l.cruise_type || '--')} &bull; ${esc(l.group_size ? l.group_size + ' guests' : '')} &bull; ${esc(l.preferred_time || '')}</div>
+      </div>`;
+    });
+  }
+  document.getElementById('dayModalBody').innerHTML = body;
+  document.getElementById('blockDayBtn').textContent = isBlocked ? 'Unblock This Day' : 'Block This Day';
+  document.getElementById('blockDayBtn').dataset.date = dateStr;
+  document.getElementById('dayModal').classList.add('open');
+}
+
+function closeDayModal() {
+  document.getElementById('dayModal').classList.remove('open');
+}
+
+function toggleBlockDay() {
+  const dateStr = document.getElementById('blockDayBtn').dataset.date;
+  const idx = blockedDates.indexOf(dateStr);
+  if (idx >= 0) {
+    blockedDates.splice(idx, 1);
+    toast('Day unblocked: ' + dateStr, 'info');
+  } else {
+    blockedDates.push(dateStr);
+    toast('Day blocked: ' + dateStr, 'success');
+  }
+  localStorage.setItem('tiki_blocked_dates', JSON.stringify(blockedDates));
+  renderCalendar();
+  closeDayModal();
+}
+
+/* ═══════════════════════════════════════════
+   TRAFFIC
+   ═══════════════════════════════════════════ */
+async function loadTraffic() {
+  const siteId = localStorage.getItem('tiki_site_id') || '';
+  const token = localStorage.getItem('tiki_netlify_token') || '';
+  if (!siteId || !token || siteId === 'PENDING') {
+    document.getElementById('trafficSessions').textContent = '--';
+    document.getElementById('trafficDuration').textContent = '--';
+    document.getElementById('sessionsChart').innerHTML = '<p style="color:var(--muted);padding:40px;text-align:center;width:100%">Configure SITE_ID and Netlify Token in Settings to view traffic data.</p>';
+    return;
+  }
+
+  try {
+    const end = new Date();
+    const start = new Date(end);
+    start.setDate(start.getDate() - 30);
+
+    const headers = { Authorization: 'Bearer ' + token };
+    const base = `https://analytics.services.netlify.com/v2/${siteId}`;
+
+    const [countRes, pagesRes, sourcesRes] = await Promise.all([
+      fetch(`${base}/ranking/pages?from=${start.getTime()}&to=${end.getTime()}&timezone=-0400&limit=5`, { headers }).then(r => r.json()).catch(() => null),
+      fetch(`${base}/ranking/pages?from=${start.getTime()}&to=${end.getTime()}&timezone=-0400&limit=5`, { headers }).then(r => r.json()).catch(() => null),
+      fetch(`${base}/ranking/sources?from=${start.getTime()}&to=${end.getTime()}&timezone=-0400&limit=5`, { headers }).then(r => r.json()).catch(() => null),
+    ]);
+
+    // Sessions chart (simulated daily breakdown using available data)
+    if (countRes && countRes.data) {
+      const total = countRes.data.reduce((s, p) => s + (p.count || 0), 0);
+      document.getElementById('trafficSessions').textContent = total.toLocaleString();
+
+      // Render simple bars from page data
+      const chart = document.getElementById('sessionsChart');
+      const maxVal = Math.max(...countRes.data.map(p => p.count || 0), 1);
+      chart.innerHTML = countRes.data.map(p => {
+        const pct = ((p.count || 0) / maxVal) * 100;
+        return `<div class="bar-col"><div class="bar" style="height:${Math.max(pct, 2)}%"></div><div class="bar-label">${esc(p.resource || '--')}</div></div>`;
+      }).join('');
+    }
+
+    if (pagesRes && pagesRes.data) {
+      document.getElementById('trafficPages').innerHTML = pagesRes.data.slice(0, 5).map(p =>
+        `<li><span>${esc(p.resource || '/')}</span><span>${p.count || 0}</span></li>`
+      ).join('');
+    }
+
+    if (sourcesRes && sourcesRes.data) {
+      document.getElementById('trafficSources').innerHTML = sourcesRes.data.slice(0, 5).map(s =>
+        `<li><span>${esc(s.resource || 'Direct')}</span><span>${s.count || 0}</span></li>`
+      ).join('');
+    }
+
+    document.getElementById('trafficDuration').textContent = '--';
+    document.getElementById('trafficDevices').innerHTML = '<li>Data requires Netlify Pro</li>';
+
+  } catch (e) {
+    toast('Traffic fetch error: ' + e.message, 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS
+   ═══════════════════════════════════════════ */
+function loadSettings() {
+  document.getElementById('setSiteId').value = localStorage.getItem('tiki_site_id') || 'PENDING';
+  document.getElementById('setNetlifyToken').value = localStorage.getItem('tiki_netlify_token') || '';
+  document.getElementById('setMailgunKey').value = localStorage.getItem('tiki_mailgun_key') || '';
+  document.getElementById('setMailgunDomain').value = localStorage.getItem('tiki_mailgun_domain') || '';
+  document.getElementById('setNotifyEmail').value = localStorage.getItem('tiki_notify_email') || '';
+  document.getElementById('setStripeKey').value = localStorage.getItem('tiki_stripe_key') || '';
+  document.getElementById('setDepositAmt').value = localStorage.getItem('tiki_deposit_amt') || '';
+  document.getElementById('setPaypalId').value = localStorage.getItem('tiki_paypal_id') || '';
+  document.getElementById('setPaypalSecret').value = localStorage.getItem('tiki_paypal_secret') || '';
+  document.getElementById('setResendKey').value = localStorage.getItem('tiki_resend_key') || '';
+  document.getElementById('setResendFrom').value = localStorage.getItem('tiki_resend_from') || '';
+}
+
+function saveSettings() {
+  localStorage.setItem('tiki_site_id', document.getElementById('setSiteId').value);
+  localStorage.setItem('tiki_netlify_token', document.getElementById('setNetlifyToken').value);
+  localStorage.setItem('tiki_mailgun_key', document.getElementById('setMailgunKey').value);
+  localStorage.setItem('tiki_mailgun_domain', document.getElementById('setMailgunDomain').value);
+  localStorage.setItem('tiki_notify_email', document.getElementById('setNotifyEmail').value);
+  localStorage.setItem('tiki_stripe_key', document.getElementById('setStripeKey').value);
+  localStorage.setItem('tiki_deposit_amt', document.getElementById('setDepositAmt').value);
+  localStorage.setItem('tiki_paypal_id', document.getElementById('setPaypalId').value);
+  localStorage.setItem('tiki_paypal_secret', document.getElementById('setPaypalSecret').value);
+  localStorage.setItem('tiki_resend_key', document.getElementById('setResendKey').value);
+  localStorage.setItem('tiki_resend_from', document.getElementById('setResendFrom').value);
+  toast('Settings saved', 'success');
+}
+
+/* ═══════════════════════════════════════════
+   EXPORT CSV
+   ═══════════════════════════════════════════ */
+function exportCSV() {
+  if (!leads.length) { toast('No leads to export', 'error'); return; }
+  const headers = ['Name','Email','Phone','Cruise Type','Preferred Date','Preferred Time','Group Size','Status','Message','Notes','Created'];
+  const rows = leads.map(l => [
+    l.name, l.email, l.phone, l.cruise_type, l.preferred_date, l.preferred_time,
+    l.group_size, l.status, l.message, l.notes, l.created_at
+  ].map(v => '"' + String(v || '').replace(/"/g, '""') + '"'));
+
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '757-tiki-leads-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exported', 'success');
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════ */
+function toast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════ */
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// Close modals on overlay click
+document.getElementById('leadModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.getElementById('dayModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDayModal(); });
+
+// Init
+checkSession();
+</script>
+</body>
+</html>

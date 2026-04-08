@@ -1,0 +1,8 @@
+node_modules/
+package-lock.json
+package.json
+screenshot*.png
+scrape.mjs
+download-images.mjs
+visual-dedup.mjs
+qa.mjs
